@@ -1,0 +1,23 @@
+# vectorfield_stack GVF parameters for BOTanica
+# These are passed to the ground_robot differential node
+
+# Vector field parameters
+vr: 0.2                    # Reference velocity (m/s) - keep slow for indoor use
+kf: 3.0                    # Convergence gain - how aggressively it corrects to path
+reverse_direction: false   # Don't reverse the field direction
+
+# Ground robot parameters
+d_feedback: 0.1            # Feedback linearization control point distance (m)
+move_backwards: false      # Don't move backwards
+
+# Obstacle avoidance (disabled for now - no obstacle sensor)
+flag_follow_obstacle: false
+epsilon: 0.35
+switch_dist_0: 0.8
+switch_dist: 0.6
+
+# Topic configuration
+pose_topic_name: "/natnet_ros/umh_5/pose"  # OptiTrack pose input
+pose_topic_type: "Pose"               # PoseStamped -> use "Pose"
+cmd_vel_topic_name: "/cmd_vel_gvf"    # Output to mux (not directly to robot)
+path_topic_name: "/gvf/path"          # Path input from botanica_brain (remapped from example_path)

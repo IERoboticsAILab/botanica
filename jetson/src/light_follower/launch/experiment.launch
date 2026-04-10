@@ -1,0 +1,33 @@
+<!--
+Experiment Launch File
+
+Wraps botanica_brain.launch and adds:
+  1. experiment_logger node (CSV data logging)
+  2. rosbag record (filtered to key topics, as backup)
+
+Usage:
+  roslaunch light_follower experiment.launch
+-->
+<launch>
+    <!-- Include the full autonomy stack -->
+    <include file="$(find light_follower)/launch/botanica_brain.launch">
+        <arg name="dock_x" default="3.156"/>
+        <arg name="dock_y" default="3.886"/>
+        <arg name="water_x" default="0.636"/>
+        <arg name="water_y" default="4.266"/>
+    </include>
+
+    <!-- Experiment data logger (3 CSVs + session_info.json) -->
+    <node pkg="light_follower" type="experiment_logger.py" name="experiment_logger" output="screen"/>
+
+    <!-- Rosbag backup recording (filtered to low-bandwidth topics) -->
+    <node pkg="rosbag" type="record" name="rosbag_record"
+          args="--output-prefix=$(env HOME)/experiment_data/rosbag_
+                /sensor_data
+                /battery_level
+                /odom
+                /natnet_ros/umh_5/pose
+                /cmd_vel
+                /experiment/events
+                /debug/scan_status"/>
+</launch>

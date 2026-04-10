@@ -1,0 +1,79 @@
+<!--
+BOTanica Brain Launch File
+
+Launches the complete autonomy stack on Jetson:
+1. BLE Sensor publisher (soil moisture, etc.)
+2. RealSense camera
+3. GVF navigation (vectorfield_stack)
+4. cmd_vel multiplexer
+5. BOTanica Brain (main state machine)
+
+Prerequisites:
+- ROS Master running on server
+- ROS_MASTER_URI set to server IP
+- vectorfield_stack installed in catkin workspace
+- OptiTrack publishing /pose
+
+Usage:
+  roslaunch light_follower botanica_brain.launch
+-->
+<launch>
+    <!-- ========== ARGUMENTS ========== -->
+    <!-- OptiTrack pose topic (adjust if your setup differs) -->
+    <arg name="pose_topic" default="/natnet_ros/umh_5/pose"/>
+
+    <!-- Waypoint coordinates in OptiTrack "world" frame -->
+    <arg name="dock_x" default="0.519"/>
+    <arg name="dock_y" default="4.284"/>
+    <arg name="water_x" default="2.736"/>
+    <arg name="water_y" default="4.160"/>
+
+
+    <!-- ========== OPTITRACK PUCK OFFSET ========== -->
+    <!-- The puck is NOT at the robot center: 8cm from right, 4cm from back -->
+    <!-- Offset from puck to base_link: x=+0.115 (forward), y=+0.0425 (left), z=-0.12 (puck is 12cm above base) -->
+    <!-- This corrects ~12cm of systematic navigation error -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="optitrack_to_base_tf"
+          args="0.115 0.0425 -0.12 0 0 0 optitrack_puck base_link" />
+
+
+    <!-- ========== SENSOR PUBLISHER ========== -->
+    <!-- BLE plant sensor (soil moisture, temperature, etc.) -->
+    <include file="$(find sensor_publisher)/launch/sensor_system.launch"/>
+
+
+    <!-- ========== GVF NAVIGATION (vectorfield_stack) ========== -->
+    <!-- Load GVF parameters -->
+    <rosparam file="$(find light_follower)/config/gvf_params.yaml" command="load" ns="gvf"/>
+
+    <!-- Ground robot GVF controller -->
+    <node pkg="ground_robot" type="differential_node.py" name="gvf_controller" output="screen">
+        <remap from="cmd_vel" to="/cmd_vel_gvf"/>
+        <remap from="example_path" to="/gvf/path"/>
+        <rosparam>
+            vr: 0.2
+            kf: 3.0
+            reverse_direction: false
+            d_feedback: 0.1
+            move_backwards: false
+            flag_follow_obstacle: false
+        </rosparam>
+    </node>
+
+
+    <!-- ========== CMD_VEL MULTIPLEXER ========== -->
+    <!-- Switches between GVF and direct control -->
+    <node pkg="light_follower" type="cmd_vel_mux.py" name="cmd_vel_mux" output="screen"/>
+
+
+    <!-- ========== BOTANICA BRAIN ========== -->
+    <!-- Main state machine and behavior controller -->
+    <node pkg="light_follower" type="botanica_brain.py" name="botanica_brain" output="screen">
+        <!-- Waypoint parameters (can be overridden via launch args) -->
+        <param name="dock_x" value="$(arg dock_x)"/>
+        <param name="dock_y" value="$(arg dock_y)"/>
+        <param name="water_x" value="$(arg water_x)"/>
+        <param name="water_y" value="$(arg water_y)"/>
+    </node>
+
+</launch>

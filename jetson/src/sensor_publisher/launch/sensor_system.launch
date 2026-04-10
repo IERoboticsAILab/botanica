@@ -1,0 +1,21 @@
+  <launch>
+      <!-- BLE Sensor Publisher -->
+      <node
+          name="sensor_publisher"
+          pkg="sensor_publisher"
+          type="sensorInfo.py"
+          output="screen"
+      />
+
+      <!-- RealSense Camera -->
+      <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+          <arg name="enable_color" value="true" />
+          <arg name="enable_depth" value="true" />
+      </include>
+
+      <!-- Static TF: base_link -> camera_link -->
+      <!-- Camera is centered, at the very front of the 31cm chassis, ~5cm above base -->
+      <!-- x=0.155 (center to front), y=0 (centered), z=0.12 (same height as puck, ~10-15cm riser) -->
+      <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_camera_tf"
+            args="0.155 0.0 0.12 0 0 0 base_link camera_link" />
+  </launch>
